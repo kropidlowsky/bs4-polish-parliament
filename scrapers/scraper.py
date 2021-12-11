@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 
 class Scraper(abc.ABC):
-    """A class used to represent a custom web scraper"""
+    """An abstract class used to represent a custom web scraper"""
 
     def __init__(self, url: str):
         """
