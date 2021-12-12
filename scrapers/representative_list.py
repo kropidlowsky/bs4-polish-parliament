@@ -18,7 +18,7 @@ def _extract_a_href(elements: bs4.element.ResultSet) -> list:
 
 class RepresentativeList(Scraper):
     """
-    Scraper class to represent a representative (deputies) hyperlinks list in Polish parliament per a term of office.
+    Scraper class to represent a representative (deputy) hyperlinks list in Polish parliament per a term of office.
     """
 
     def __init__(self, url: str = "https://www.sejm.gov.pl/Sejm9.nsf/poslowie.xsp?type=A"):
