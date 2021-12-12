@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 
 class Scraper(abc.ABC):
-    """Abstract class used to represent a custom web scraper"""
+    """Abstract class used to represent a custom web scraper."""
 
     def __init__(self, url: str):
         """
@@ -16,7 +16,7 @@ class Scraper(abc.ABC):
     @abc.abstractmethod
     def _scrape(self) -> None:
         """
-        scrape website to collect data
+        Scrape website to collect data.
         :return: None
         """
         pass
@@ -24,7 +24,7 @@ class Scraper(abc.ABC):
     @abc.abstractmethod
     def _prepare_result(self, data) -> None:
         """
-        prepare desired result
+        Prepare desired result.
         :param data: bs4 data to process
         :return: None
         """
