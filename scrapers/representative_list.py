@@ -4,7 +4,7 @@ import bs4
 
 def _extract_a_href(elements: bs4.element.ResultSet) -> list:
     """
-    extract href (link's destination) attributes from a (HTML hyperlink) from provided list of HTML elements
+    Extract href (link's destination) attributes from a (HTML hyperlink) from provided list of HTML elements.
     :param elements: list of HTML elements
     :return: list of links
     """
