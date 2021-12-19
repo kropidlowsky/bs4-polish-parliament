@@ -12,20 +12,12 @@ class Scraper(abc.ABC):
         """
         self.url: str = url
         self._soup: BeautifulSoup = helper.get_soup(helper.get_response(self.url))
+        self.result = None
 
     @abc.abstractmethod
     def _scrape(self) -> None:
         """
         Scrape website to collect data.
-        :return: None
-        """
-        pass
-
-    @abc.abstractmethod
-    def _prepare_result(self, data) -> None:
-        """
-        Prepare desired result.
-        :param data: bs4 data to process
         :return: None
         """
         pass
