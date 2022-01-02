@@ -11,7 +11,7 @@ class Scraper(abc.ABC):
         :param url: url to scrape
         """
         self.url: str = url
-        self._soup: BeautifulSoup = helper.get_soup(helper.get_response(self.url))
+        self._make_soup()
         self.result = None
 
     @abc.abstractmethod
@@ -21,3 +21,11 @@ class Scraper(abc.ABC):
         :return: None
         """
         pass
+
+    def _make_soup(self, html=None) -> None:
+        if not html:
+            html = helper.get_response(self.url)
+            self._soup: BeautifulSoup = helper.get_soup(html)
+        else:
+            # selenium
+            self._soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
