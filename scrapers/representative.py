@@ -1,10 +1,7 @@
-import time
-
 from selenium.webdriver import chrome
 
 from scraper import Scraper
 import bs4
-from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
@@ -62,40 +59,45 @@ class Representative(Scraper):
             if key:
                 self.result[key] = li.select_one('p.right').get_text()
 
-    def __get_dynamic_info(self):
+    def __get_dynamic_info(self) -> None:
         if self._get_dynamic:
-            self.__get_selenium_driver()
+            self._get_selenium_driver()
             self.__click_div_hyperlinks()
-            self.__click_div_hyperlinks('kontakt', 1)
-            self._make_soup(self.__driver.page_source)
+            self.__click_div_hyperlinks('kontakt')
+            self._make_soup(self._driver.page_source)
 
-    def __get_selenium_driver(self) -> None:
-        self.__driver = webdriver.Chrome()
-        self.__driver.get(self.url)
-
-    def __click_div_hyperlinks(self, div_class: str = 'aktywnosc', sep: int = 0):
-        lis = self.__driver.find_elements(By.CSS_SELECTOR, f'div.{div_class} ul.data li')
+    def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
+        """
+        Click all div's hyperlinks.
+        A representative website has two divs with dynamic elements:
+            1) aktywnosc - standard case. New elements appear under 'content' ID.
+            2) kontakt - complex case.
+        :param div_class: div's class to click through
+        """
+        lis = self._driver.find_elements(By.CSS_SELECTOR, f'div.{div_class} ul.data li')
         for i, li in enumerate(lis):
             li.find_element(By.CSS_SELECTOR, 'a').click()
-            if sep != 0 and i >= sep:
-                if i == 1:
-                    WebDriverWait(li, 10).until(
-                        ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdWspInner")))
-                if i == 2:
-                    WebDriverWait(li, 10).until(
-                        ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdMajatekInner")))
-                if i == 3:
-                    WebDriverWait(li, 10).until(
-                        ec.presence_of_element_located(
-                            (By.ID, "view:_id1:_id2:facetMain:_id191:holdKorzysciInner")))
-                if i == 4:
-                    WebDriverWait(li, 10).until(
-                        ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:_id280")))
+            if div_class == 'kontakt' and i >= 1:
+                self.__wait_for_contact_loading(i, li)
             else:
                 WebDriverWait(li, 10).until(ec.presence_of_element_located((By.ID, "content")))
-                li.find_element(By.ID, 'content')
 
-    def __get_email(self):
+    def __wait_for_contact_loading(self, i, li):
+        if i == 1:
+            WebDriverWait(li, 10).until(
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdWspInner")))
+        elif i == 2:
+            WebDriverWait(li, 10).until(
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdMajatekInner")))
+        elif i == 3:
+            WebDriverWait(li, 10).until(
+                ec.presence_of_element_located(
+                    (By.ID, "view:_id1:_id2:facetMain:_id191:holdKorzysciInner")))
+        elif i == 4:
+            WebDriverWait(li, 10).until(
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:_id280")))
+
+    def __get_email(self) -> None:
         """
         Get email address from href value (must be parsed later) to avoid using Selenium.
         """
