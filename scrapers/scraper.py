@@ -1,12 +1,13 @@
 import helper
 import abc
 from bs4 import BeautifulSoup
+from selenium import webdriver
 
 
 class Scraper(abc.ABC):
     """Abstract class used to represent a custom web scraper."""
 
-    def __init__(self, url: str):
+    def __init__(self, url: str) -> None:
         """
         :param url: url to scrape
         """
@@ -34,3 +35,7 @@ class Scraper(abc.ABC):
         else:
             # Selenium
             self._soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
+
+    def _get_selenium_driver(self) -> None:
+        self._driver = webdriver.Chrome()
+        self._driver.get(self.url)
