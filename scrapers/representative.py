@@ -19,6 +19,7 @@ class Representative(Scraper):
         super().__init__(url)
         self._get_dynamic = get_dynamic
         self.result = dict()
+        self.result['hrefs'] = dict()
         self._scrape()
 
     def _scrape(self) -> None:
@@ -31,7 +32,6 @@ class Representative(Scraper):
         data_uls = self.__get_data_uls()
         self.__get_static_info(data_uls)
         self.__get_dynamic_info()
-        self.__get_email()
 
     def __get_info_div(self) -> bs4.BeautifulSoup:
         """
@@ -65,6 +65,10 @@ class Representative(Scraper):
             self.__click_div_hyperlinks()
             self.__click_div_hyperlinks('kontakt')
             self._make_soup(self._driver.page_source)
+            self.__get_speeches()
+            self.__get_actions()
+            self.__get_votes()
+            self.__get_email()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -97,13 +101,36 @@ class Representative(Scraper):
             WebDriverWait(li, 10).until(
                 ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:_id280")))
 
+    def __get_speeches(self):
+        # Wystąpienia na posiedzeniach Sejmu
+        self.result['Wypowiedzi href'] = self._soup.select_one('#content > table > tbody > tr > td > a').get('href')
+        self.result['Wypowiedzi łącznie'] = self._soup.select_one('#content > table > tbody > tr > td').get_text()
+
+    def __get_actions(self):
+        # Interpelacje, zapytania, pytania w sprawach bieżących, oświadczenia
+        action_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdInterpelacje')
+        rows = action_div.select('tr')
+        for row in rows:
+            tds = row.select('td')
+            if len(tds) == 3:
+                left_td, right_td = tds[0], tds[1]
+                left_a = left_td.select_one('a')
+                self.result['hrefs'][left_a.get_text()] = left_a.get('href')
+                self.result[left_a.get_text()] = right_td.get_text()
+
+    def __get_votes(self):
+        vote_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdGlosowania')
+        vote_tds = vote_div.select('td')
+        self.result['votes'] = dict()
+        self.result['percentage'] = vote_tds[0].get_text()
+        self.result['number'] = vote_tds[1].get_text()
+        self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
+
     def __get_email(self) -> None:
-        """
-        Get email address from href value (must be parsed later) to avoid using Selenium.
-        """
-        self.result['email'] = self.__info_div.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
+        self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
 
 
 if __name__ == '__main__':
-    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
     print(representative.result)
