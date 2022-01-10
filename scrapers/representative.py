@@ -69,6 +69,9 @@ class Representative(Scraper):
             self.__get_actions()
             self.__get_votes()
             self.__get_email()
+            self.__get_commissions()
+            self.__get_delegations()
+            self.__get_teams()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -125,6 +128,40 @@ class Representative(Scraper):
         self.result['percentage'] = vote_tds[0].get_text()
         self.result['number'] = vote_tds[1].get_text()
         self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
+
+    def __get_table(self, key, div):
+        self.result[key] = list()
+        head_names = self.__get_table_heads(div)
+        trs = div.select('tr')
+        self.__get_rows(key, trs, head_names)
+
+    def __get_table_heads(self, div) -> list:
+        head_names = list()
+        for head_th in div.select('#content > table > thead > tr > th'):
+            head_names.append(head_th.get_text())
+        return head_names
+
+    def __get_rows(self, key, trs, head_names):
+        for i, tr in enumerate(trs):
+            self.result[key].append(dict())
+            for j, td in enumerate(tr.select('td')):
+                if j == 0:
+                    self.result[key][i]['nazwa'] = td.get_text()
+                    self.result[key][i]['href'] = td.select_one('a').get('href')
+                else:
+                    self.result[key][i][head_names[j]] = td.get_text()
+
+    def __get_commissions(self) -> None:
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdKomisje')
+        self.__get_table('komisje', div)
+
+    def __get_delegations(self) -> None:
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdDelegacje')
+        self.__get_table('delegacje', div)
+
+    def __get_teams(self) -> None:
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdZespoly')
+        self.__get_table('zespoły', div)
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
