@@ -1,7 +1,7 @@
-import helper
 import abc
 from bs4 import BeautifulSoup
 from selenium import webdriver
+import requests
 
 
 class Scraper(abc.ABC):
@@ -30,11 +30,9 @@ class Scraper(abc.ABC):
         """
         if not html:
             # BS4
-            html = helper.get_response(self.url)
-            self._soup: BeautifulSoup = helper.get_soup(html)
-        else:
-            # Selenium
-            self._soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
+            req = requests.get(self.url)
+            html = req.content
+        self._soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
 
     def _get_selenium_driver(self) -> None:
         self._driver = webdriver.Chrome()
