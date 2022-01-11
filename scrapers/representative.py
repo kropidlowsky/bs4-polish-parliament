@@ -73,6 +73,7 @@ class Representative(Scraper):
             self.__get_delegations()
             self.__get_teams()
             self.__get_offices()
+            self.__get_collaborators()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -130,12 +131,12 @@ class Representative(Scraper):
         self.result['number'] = vote_tds[1].get_text()
         self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
 
-    def __get_table(self, key: str, div, head_names: list = [], last_column_is_href=False, last_row_is_info=False):
+    def __get_table(self, key: str, div, head_names: list = [], last_column_is_file=False, last_row_is_info=False):
         self.result[key] = list()
         if not head_names:
             head_names = self.__get_table_heads(div)
         trs = div.select('tr')
-        self.__get_rows(key, trs, head_names, last_column_is_href, last_row_is_info)
+        self.__get_rows(key, trs, head_names, last_column_is_file, last_row_is_info)
 
     def __get_table_heads(self, div) -> list:
         head_names = list()
@@ -185,6 +186,14 @@ class Representative(Scraper):
         ]
         self.__get_table(key, main_div, head_names, last_row_is_info=True)
         self.__get_table("biurowe raporty", reports_div)
+
+    def __get_collaborators(self) -> None:
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdWspInner')
+        head_names = [
+            "nazwa",
+            "rola"
+        ]
+        self.__get_table('współpracownicy', div, head_names, last_column_is_file=True)
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
