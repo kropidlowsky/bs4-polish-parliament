@@ -74,6 +74,7 @@ class Representative(Scraper):
             self.__get_teams()
             self.__get_offices()
             self.__get_collaborators()
+            self.__get_financial_declarations()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -194,6 +195,13 @@ class Representative(Scraper):
             "rola"
         ]
         self.__get_table('współpracownicy', div, head_names, last_column_is_file=True)
+
+    def __get_financial_declarations(self):
+        tbody = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdMajatekInner > table > tbody')
+        head_names = [
+            "nazwa"
+        ]
+        self.__get_table('oświadczenia majątkowe', tbody, head_names, last_column_is_file=True)
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
