@@ -19,7 +19,6 @@ class Representative(Scraper):
         super().__init__(url)
         self._get_dynamic = get_dynamic
         self.result = dict()
-        self.result['hrefs'] = dict()
         self._scrape()
 
     def _scrape(self) -> None:
