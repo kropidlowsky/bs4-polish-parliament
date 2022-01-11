@@ -68,13 +68,14 @@ class Representative(Scraper):
             self.__get_speeches()
             self.__get_actions()
             self.__get_votes()
-            self.__get_email()
             self.__get_commissions()
             self.__get_delegations()
             self.__get_teams()
             self.__get_offices()
             self.__get_collaborators()
             self.__get_financial_declarations()
+            self.__get_benefit_record()
+            self.__get_email()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -202,6 +203,16 @@ class Representative(Scraper):
             "nazwa"
         ]
         self.__get_table('oświadczenia majątkowe', tbody, head_names, last_column_is_file=True)
+
+    def __get_benefit_record(self):
+        key = 'rejestr korzyści'
+        self.result[key] = list()
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdKorzysciInner')
+        as_ = div.select('a')
+        for i, a in enumerate(as_):
+            self.result[key].append(dict())
+            self.result[key][i]['nazwa'] = a.get_text()
+            self.result[key][i]['plik'] = a.get('href')
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
