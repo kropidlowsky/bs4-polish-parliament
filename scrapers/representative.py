@@ -132,11 +132,11 @@ class Representative(Scraper):
         self.result['number'] = vote_tds[1].get_text()
         self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
 
-    def __get_table(self, key: str, div, head_names: list = [], last_column_is_file=False, last_row_is_info=False):
+    def __get_table(self, key: str, html_element, head_names: list = [], last_column_is_file=False, last_row_is_info=False):
         self.result[key] = list()
         if not head_names:
-            head_names = self.__get_table_heads(div)
-        trs = div.select('tr')
+            head_names = self.__get_table_heads(html_element)
+        trs = html_element.select('tr')
         self.__get_rows(key, trs, head_names, last_column_is_file, last_row_is_info)
 
     def __get_table_heads(self, div) -> list:
