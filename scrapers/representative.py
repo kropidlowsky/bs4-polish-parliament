@@ -72,6 +72,7 @@ class Representative(Scraper):
             self.__get_commissions()
             self.__get_delegations()
             self.__get_teams()
+            self.__get_offices()
 
     def __click_div_hyperlinks(self, div_class: str = 'aktywnosc') -> None:
         """
@@ -129,11 +130,12 @@ class Representative(Scraper):
         self.result['number'] = vote_tds[1].get_text()
         self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
 
-    def __get_table(self, key, div):
+    def __get_table(self, key: str, div, head_names: list = [], last_column_is_href=False, last_row_is_info=False):
         self.result[key] = list()
-        head_names = self.__get_table_heads(div)
+        if not head_names:
+            head_names = self.__get_table_heads(div)
         trs = div.select('tr')
-        self.__get_rows(key, trs, head_names)
+        self.__get_rows(key, trs, head_names, last_column_is_href, last_row_is_info)
 
     def __get_table_heads(self, div) -> list:
         head_names = list()
@@ -141,13 +143,21 @@ class Representative(Scraper):
             head_names.append(head_th.get_text())
         return head_names
 
-    def __get_rows(self, key, trs, head_names):
+    def __get_rows(self, key, trs, head_names, last_column_is_file=False, last_row_is_info=False):
         for i, tr in enumerate(trs):
             self.result[key].append(dict())
-            for j, td in enumerate(tr.select('td')):
-                if j == 0:
+            tds = tr.select('td')
+            for j, td in enumerate(tds):
+                if last_row_is_info and i == len(trs) - 1:
+                    self.result[key][i]['info'] = td.get_text()
+                    break
+                elif j == 0:
                     self.result[key][i]['nazwa'] = td.get_text()
-                    self.result[key][i]['href'] = td.select_one('a').get('href')
+                    if not last_column_is_file and not last_row_is_info:
+                        self.result[key][i]['href'] = td.select_one('a').get('href')
+                elif last_column_is_file and j == len(tds) - 1:
+                    self.result[key][i]['nazwa pliku'] = td.get_text()
+                    self.result[key][i]['plik'] = td.select_one('a').get('href')
                 else:
                     self.result[key][i][head_names[j]] = td.get_text()
 
@@ -162,6 +172,19 @@ class Representative(Scraper):
     def __get_teams(self) -> None:
         div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdZespoly')
         self.__get_table('zespoły', div)
+
+    def __get_offices(self) -> None:
+        key = 'biura'
+        divs = self._soup.select('#view\:_id1\:_id2\:facetMain\:_id191\:holdBiura > div#content')
+        main_div, reports_div = divs[0], divs[1].select_one('tbody')
+        head_names = [
+            "nazwa",
+            "adres",
+            "telefon",
+            "email"
+        ]
+        self.__get_table(key, main_div, head_names, last_row_is_info=True)
+        self.__get_table("biurowe raporty", reports_div)
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
