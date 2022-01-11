@@ -27,8 +27,8 @@ class Representative(Scraper):
         Scrape representative (deputy) profile url.
         """
         self.__info_div = self.__get_info_div()
-        self.result['name'] = self.__get_name()
-        self.result['picture'] = self.__get_picture()
+        self.result['nazwa'] = self.__get_name()
+        self.result['zdjęcie'] = self.__get_picture()
         data_uls = self.__get_data_uls()
         self.__get_static_info(data_uls)
         self.__get_dynamic_info()
@@ -110,34 +110,42 @@ class Representative(Scraper):
 
     def __get_speeches(self):
         # Wystąpienia na posiedzeniach Sejmu
-        self.result['Wypowiedzi href'] = self._soup.select_one('#content > table > tbody > tr > td > a').get('href')
-        self.result['Wypowiedzi łącznie'] = self._soup.select_one('#content > table > tbody > tr > td').get_text()
+        key = 'wypowiedzi'
+        self.result[key] = dict()
+        self.result[key]['href'] = self._soup.select_one('#content > table > tbody > tr > td > a').get('href')
+        self.result[key]['łącznie'] = self._soup.select_one('#content > table > tbody > tr > td').get_text()
 
     def __get_actions(self):
         # Interpelacje, zapytania, pytania w sprawach bieżących, oświadczenia
+        key = 'interpelacje'
+        self.result[key] = list()
         action_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdInterpelacje')
         rows = action_div.select('tr')
-        for row in rows:
+        for i, row in enumerate(rows):
             tds = row.select('td')
             if len(tds) == 3:
+                self.result[key].append(dict())
                 left_td, right_td = tds[0], tds[1]
                 left_a = left_td.select_one('a')
-                self.result['hrefs'][left_a.get_text()] = left_a.get('href')
-                self.result[left_a.get_text()] = right_td.get_text()
+                self.result[key][i]['nazwa'] = left_a.get_text()
+                self.result[key][i]['href'] = left_a.get('href')
+                self.result[key][i]['liczba'] = right_td.get_text()
 
     def __get_votes(self):
         vote_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdGlosowania')
         vote_tds = vote_div.select('td')
-        self.result['votes'] = dict()
-        self.result['percentage'] = vote_tds[0].get_text()
-        self.result['number'] = vote_tds[1].get_text()
-        self.result['hrefs']['votes'] = vote_tds[2].select_one('a').get('href')
+        key = 'głosy'
+        self.result[key] = dict()
+        self.result[key]['procent'] = vote_tds[0].get_text()
+        self.result[key]['liczba'] = vote_tds[1].get_text()
+        self.result[key]['href'] = vote_tds[2].select_one('a').get('href')
 
-    def __get_table(self, key: str, html_element, head_names: list = [], last_column_is_file=False, last_row_is_info=False):
+    def __get_table(self, key: str, html_element, head_names: list = [], last_column_is_file=False,
+                    last_row_is_info=False):
         self.result[key] = list()
         if not head_names:
             head_names = self.__get_table_heads(html_element)
-        trs = html_element.select('tr')
+        trs = html_element.select('tbody > tr')
         self.__get_rows(key, trs, head_names, last_column_is_file, last_row_is_info)
 
     def __get_table_heads(self, div) -> list:
@@ -159,8 +167,8 @@ class Representative(Scraper):
                     if not last_column_is_file and not last_row_is_info:
                         self.result[key][i]['href'] = td.select_one('a').get('href')
                 elif last_column_is_file and j == len(tds) - 1:
-                    self.result[key][i]['nazwa pliku'] = td.get_text()
-                    self.result[key][i]['plik'] = td.select_one('a').get('href')
+                    self.result[key][i]['plik'] = td.get_text()
+                    self.result[key][i]['href'] = td.select_one('a').get('href')
                 else:
                     self.result[key][i][head_names[j]] = td.get_text()
 
@@ -212,7 +220,7 @@ class Representative(Scraper):
         for i, a in enumerate(as_):
             self.result[key].append(dict())
             self.result[key][i]['nazwa'] = a.get_text()
-            self.result[key][i]['plik'] = a.get('href')
+            self.result[key][i]['href'] = a.get('href')
 
     def __get_email(self) -> None:
         self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
