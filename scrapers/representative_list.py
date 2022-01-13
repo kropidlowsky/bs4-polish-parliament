@@ -1,5 +1,7 @@
 from scraper import Scraper
+from urllib.parse import urljoin
 import bs4
+from representative import Representative
 
 
 class RepresentativeList(Scraper):
@@ -12,10 +14,10 @@ class RepresentativeList(Scraper):
         :param url: representatives (deputies) list in Polish parliament in a term of office.
         """
         super().__init__(url)
+        self.representatives_result = list()
         self.result = list()
-        self._scrape()
 
-    def _scrape(self) -> None:
+    def scrape(self) -> None:
         """Scrape deputies (representatives) links form a term of office."""
         uls = self.__get_deputies_uls()
         self.__extract_a_href(uls)
@@ -32,11 +34,22 @@ class RepresentativeList(Scraper):
         """
         for a_list in (e.select("a", href=True) for e in elements):
             for a in a_list:
-                self.result.append((a.get('href'))) if a.get('href') else None
+                # update part href to the full URL
+                self.result.append(urljoin(self.url, a.get('href'))) if a.get('href') else None
+
+    def scrape_representatives(self, get_dynamic=False):
+        for url in self.result:
+            representative = Representative(url, get_dynamic)
+            representative.scrape()
+            self.representatives_result.append(representative.result)
 
 
 if __name__ == '__main__':
     rl = RepresentativeList()
+    rl.scrape()
     for r in rl.result:
         print(r)
+    rl.scrape_representatives(True)
+    rl.save_data_to_json(rl.representatives_result)
+    # print(rl.representatives_result)
     print(len(rl.result))
