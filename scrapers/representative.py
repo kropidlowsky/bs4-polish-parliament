@@ -59,13 +59,20 @@ class Representative(Scraper):
             if key:
                 self.result[key] = li.select_one('p.right').get_text()
 
-        self.__get_eu_opinions()
+        # Opiniowanie projektów UE - Rafał Bochenek
+        self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:opinieue')
+        # Naruszenie zasad etyki poselskiej - Grzegorz Braun
+        self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:naruszenie')
 
-    def __get_eu_opinions(self):
-        # Opiniowanie projektów UE - e.g. Rafał Bochenek
-        eu_opinions = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:opinieue')
-        if eu_opinions:
-            self.result[eu_opinions.get_text()] = eu_opinions.get('href')
+    def __get_static_datum_from_dynamic_div(self, css_selector: str):
+        """
+        Ensure if the static element exists then store it in result.
+        :param css_selector: css selector to the static element
+        :return:
+        """
+        element = self._soup.select_one(css_selector)
+        if element:
+            self.result[element.get_text()] = element.get('href')
 
     def __get_dynamic_info(self) -> None:
         if self._get_dynamic:
@@ -93,15 +100,22 @@ class Representative(Scraper):
             2) kontakt - complex case.
         :param div_class: div's class to click through
         """
+
+        def find_static_element(li, element_id: str):
+            # to catch a not dynamic element in activity div
+            try:
+                element = li.find_element(By.ID, element_id)
+            except NoSuchElementException:
+                return False
+            return True
+
         lis = self._driver.find_elements(By.CSS_SELECTOR, f'div.{div_class} ul.data li')
         for i, li in enumerate(lis):
-            eu_opinions = False
-            try:
-                # to catch a not dynamic element in activity div - e.g., Rafał Bochenek
-                eu_opinions = li.find_element(By.ID, 'view:_id1:_id2:facetMain:_id191:opinieue')
-            except NoSuchElementException:
-                pass
-            if not eu_opinions:
+            # Opiniowanie projektów UE - Rafał Bochenek
+            eu_opinions = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:opinieue')
+            # Naruszenie zasad etyki poselskiej - Grzegorz Braun
+            ethics = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:naruszenie')
+            if not eu_opinions and not ethics:
                 li.find_element(By.CSS_SELECTOR, 'a').click()
                 if div_class == 'kontakt' and i >= 1:
                     self.__wait_for_contact_loading(i, li)
@@ -244,13 +258,18 @@ class Representative(Scraper):
 
 
 if __name__ == '__main__':
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=034&type=A', True)
+    representative.scrape()
+    print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
     representative.scrape()
     print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
     representative.scrape()
     print(representative.result)
-    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
-    # print(representative.result)
-    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
-    # print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
+    representative.scrape()
+    print(representative.result)
