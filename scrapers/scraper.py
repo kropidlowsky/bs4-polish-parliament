@@ -2,6 +2,7 @@ import abc
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import requests
+import json
 
 
 class Scraper(abc.ABC):
@@ -16,7 +17,7 @@ class Scraper(abc.ABC):
         self.result = None
 
     @abc.abstractmethod
-    def _scrape(self) -> None:
+    def scrape(self) -> None:
         """
         Scrape website to collect data.
         :return: None
@@ -37,3 +38,7 @@ class Scraper(abc.ABC):
     def _get_selenium_driver(self) -> None:
         self._driver = webdriver.Chrome()
         self._driver.get(self.url)
+
+    def save_data_to_json(self, data, filename='data.json'):
+        with open(filename, 'w') as file:
+            json.dump(data, file)
