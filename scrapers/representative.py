@@ -5,6 +5,7 @@ import bs4
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 
 
 class Representative(Scraper):
@@ -58,6 +59,14 @@ class Representative(Scraper):
             if key:
                 self.result[key] = li.select_one('p.right').get_text()
 
+        self.__get_eu_opinions()
+
+    def __get_eu_opinions(self):
+        # Opiniowanie projektów UE - e.g. Rafał Bochenek
+        eu_opinions = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:opinieue')
+        if eu_opinions:
+            self.result[eu_opinions.get_text()] = eu_opinions.get('href')
+
     def __get_dynamic_info(self) -> None:
         if self._get_dynamic:
             self._get_selenium_driver()
@@ -86,15 +95,18 @@ class Representative(Scraper):
         """
         lis = self._driver.find_elements(By.CSS_SELECTOR, f'div.{div_class} ul.data li')
         for i, li in enumerate(lis):
-            li.find_element(By.CSS_SELECTOR, 'a').click()
-            if div_class == 'kontakt' and i >= 1:
-                self.__wait_for_contact_loading(i, li)
-            else:
-                # Rafał Bochenek
-                # try:
-                WebDriverWait(li, 10).until(ec.presence_of_element_located((By.ID, "content")))
-                # except Exception:
-                #     pass
+            eu_opinions = False
+            try:
+                # to catch a not dynamic element in activity div - e.g., Rafał Bochenek
+                eu_opinions = li.find_element(By.ID, 'view:_id1:_id2:facetMain:_id191:opinieue')
+            except NoSuchElementException:
+                pass
+            if not eu_opinions:
+                li.find_element(By.CSS_SELECTOR, 'a').click()
+                if div_class == 'kontakt' and i >= 1:
+                    self.__wait_for_contact_loading(i, li)
+                else:
+                    WebDriverWait(li, 10).until(ec.presence_of_element_located((By.ID, "content")))
 
     def __wait_for_contact_loading(self, i, li):
         if i == 1:
@@ -232,9 +244,9 @@ class Representative(Scraper):
 
 
 if __name__ == '__main__':
-    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
-    # representative.scrape()
-    # print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
+    representative.scrape()
+    print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
     representative.scrape()
     print(representative.result)
