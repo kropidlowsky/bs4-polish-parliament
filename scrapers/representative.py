@@ -19,9 +19,8 @@ class Representative(Scraper):
         super().__init__(url)
         self._get_dynamic = get_dynamic
         self.result = dict()
-        self._scrape()
 
-    def _scrape(self) -> None:
+    def scrape(self) -> None:
         """
         Scrape representative (deputy) profile url.
         """
@@ -30,6 +29,7 @@ class Representative(Scraper):
         self.result['zdjęcie'] = self.__get_picture()
         data_uls = self.__get_data_uls()
         self.__get_static_info(data_uls)
+        print(self.result['nazwa'])
         self.__get_dynamic_info()
 
     def __get_info_div(self) -> bs4.BeautifulSoup:
@@ -90,7 +90,11 @@ class Representative(Scraper):
             if div_class == 'kontakt' and i >= 1:
                 self.__wait_for_contact_loading(i, li)
             else:
+                # Rafał Bochenek
+                # try:
                 WebDriverWait(li, 10).until(ec.presence_of_element_located((By.ID, "content")))
+                # except Exception:
+                #     pass
 
     def __wait_for_contact_loading(self, i, li):
         if i == 1:
@@ -194,7 +198,9 @@ class Representative(Scraper):
             "email"
         ]
         self.__get_table(key, main_div, head_names, last_row_is_info=True)
-        self.__get_table("biurowe raporty", reports_div)
+        # Some representatives do not have office reports - e.g., Zbigniew Ajchler
+        if reports_div:
+            self.__get_table("biurowe raporty", reports_div)
 
     def __get_collaborators(self) -> None:
         div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdWspInner')
@@ -226,7 +232,13 @@ class Representative(Scraper):
 
 
 if __name__ == '__main__':
-    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
+    # representative.scrape()
+    # print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
+    representative.scrape()
     print(representative.result)
-    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
-    print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    # print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
+    # print(representative.result)
