@@ -120,29 +120,31 @@ class Representative(Scraper):
                 if div_class == 'kontakt' and i >= 1:
                     self.__wait_for_contact_loading(i, li)
                 else:
-                    WebDriverWait(li, 10).until(ec.presence_of_element_located((By.ID, "content")))
+                    WebDriverWait(li, 30).until(ec.presence_of_element_located((By.ID, "content")))
 
     def __wait_for_contact_loading(self, i, li):
         if i == 1:
-            WebDriverWait(li, 10).until(
+            WebDriverWait(li, 30).until(
                 ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdWspInner")))
         elif i == 2:
-            WebDriverWait(li, 10).until(
+            WebDriverWait(li, 30).until(
                 ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdMajatekInner")))
         elif i == 3:
-            WebDriverWait(li, 10).until(
+            WebDriverWait(li, 30).until(
                 ec.presence_of_element_located(
                     (By.ID, "view:_id1:_id2:facetMain:_id191:holdKorzysciInner")))
         elif i == 4:
-            WebDriverWait(li, 10).until(
+            WebDriverWait(li, 30).until(
                 ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:_id280")))
 
     def __get_speeches(self):
         # Wystąpienia na posiedzeniach Sejmu
         key = 'wypowiedzi'
         self.result[key] = dict()
-        self.result[key]['href'] = self._soup.select_one('#content > table > tbody > tr > td > a').get('href')
-        self.result[key]['łącznie'] = self._soup.select_one('#content > table > tbody > tr > td').get_text()
+        a = self._soup.select_one('#content > table > tbody > tr > td > a')
+        if a:
+            self.result[key]['href'] = a.get('href')
+            self.result[key]['łącznie'] = a.get_text()
 
     def __get_actions(self):
         # Interpelacje, zapytania, pytania w sprawach bieżących, oświadczenia
@@ -258,18 +260,21 @@ class Representative(Scraper):
 
 
 if __name__ == '__main__':
-    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=034&type=A', True)
-    representative.scrape()
-    print(representative.result)
-    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
-    representative.scrape()
-    print(representative.result)
-    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
-    representative.scrape()
-    print(representative.result)
-    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
-    representative.scrape()
-    print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=034&type=A', True)
+    # representative.scrape()
+    # print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
+    # representative.scrape()
+    # print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
+    # representative.scrape()
+    # print(representative.result)
+    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    # representative.scrape()
+    # print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=039&type=A', True)
     representative.scrape()
     print(representative.result)
