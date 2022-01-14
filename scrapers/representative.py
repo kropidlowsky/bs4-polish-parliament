@@ -63,16 +63,22 @@ class Representative(Scraper):
         self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:opinieue')
         # Naruszenie zasad etyki poselskiej - Grzegorz Braun
         self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:naruszenie')
+        # Strona WWW - Wanda Nowicka
+        self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:_id275', '#poselWWW')
 
-    def __get_static_datum_from_dynamic_div(self, css_selector: str):
+    def __get_static_datum_from_dynamic_div(self, css_selector: str, key_css_selector=""):
         """
         Ensure if the static element exists then store it in result.
-        :param css_selector: css selector to the static element
-        :return:
+        :param css_selector: css selector to the static element [value]
+        :param key_css_selector: css selector to the static element [key]
         """
         element = self._soup.select_one(css_selector)
         if element:
-            self.result[element.get_text()] = element.get('href')
+            if key_css_selector:
+                key = self._soup.select_one(key_css_selector).get_text()
+            else:
+                key = element.get_text()
+            self.result[key] = element.get('href')
 
     def __get_dynamic_info(self) -> None:
         if self._get_dynamic:
@@ -115,7 +121,9 @@ class Representative(Scraper):
             eu_opinions = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:opinieue')
             # Naruszenie zasad etyki poselskiej - Grzegorz Braun
             ethics = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:naruszenie')
-            if not eu_opinions and not ethics:
+            # Strona WWW - Wanda Nowicka
+            web = find_static_element(li, 'poselWWW')
+            if not eu_opinions and not ethics and not web:
                 li.find_element(By.CSS_SELECTOR, 'a').click()
                 if div_class == 'kontakt' and i >= 1:
                     self.__wait_for_contact_loading(i, li)
@@ -151,16 +159,17 @@ class Representative(Scraper):
         key = 'interpelacje'
         self.result[key] = list()
         action_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdInterpelacje')
-        rows = action_div.select('tr')
-        for i, row in enumerate(rows):
-            tds = row.select('td')
-            if len(tds) == 3:
-                self.result[key].append(dict())
-                left_td, right_td = tds[0], tds[1]
-                left_a = left_td.select_one('a')
-                self.result[key][i]['nazwa'] = left_a.get_text()
-                self.result[key][i]['href'] = left_a.get('href')
-                self.result[key][i]['liczba'] = right_td.get_text()
+        if action_div:
+            rows = action_div.select('tr')
+            for i, row in enumerate(rows):
+                tds = row.select('td')
+                if len(tds) == 3:
+                    self.result[key].append(dict())
+                    left_td, right_td = tds[0], tds[1]
+                    left_a = left_td.select_one('a')
+                    self.result[key][i]['nazwa'] = left_a.get_text()
+                    self.result[key][i]['href'] = left_a.get('href')
+                    self.result[key][i]['liczba'] = right_td.get_text()
 
     def __get_votes(self):
         vote_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdGlosowania')
@@ -196,7 +205,9 @@ class Representative(Scraper):
                 elif j == 0:
                     self.result[key][i]['nazwa'] = td.get_text()
                     if not last_column_is_file and not last_row_is_info:
-                        self.result[key][i]['href'] = td.select_one('a').get('href')
+                        a = td.select_one('a')
+                        if a:
+                            self.result[key][i]['href'] = a.get('href')
                 elif last_column_is_file and j == len(tds) - 1:
                     self.result[key][i]['plik'] = td.get_text()
                     self.result[key][i]['href'] = td.select_one('a').get('href')
@@ -260,21 +271,27 @@ class Representative(Scraper):
 
 
 if __name__ == '__main__':
-    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=034&type=A', True)
-    # representative.scrape()
-    # print(representative.result)
-    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
-    # representative.scrape()
-    # print(representative.result)
-    # representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
-    # representative.scrape()
-    # print(representative.result)
-    # representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
-    # representative.scrape()
-    # print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=034&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=469&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=027&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=001&type=A', True)
+    representative.scrape()
+    print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=002&type=A', True)
     representative.scrape()
     print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=039&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/sejm9.nsf/posel.xsp?id=087&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=269&type=A', True)
     representative.scrape()
     print(representative.result)
