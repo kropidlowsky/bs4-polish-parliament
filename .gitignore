@@ -134,3 +134,5 @@ dmypy.json
 
 # selenium
 scrapers/chromedriver.exe
+
+*.json
