@@ -16,8 +16,6 @@ class RepresentativeList(Scraper):
         super().__init__(url)
         self.representatives_result = list()
         self.result = list()
-        # as_ = self._soup.select('ul.deputies > li > div > a')
-        # print(as_)
 
     def scrape(self) -> None:
         """Scrape deputies (representatives) links from a term of office."""
