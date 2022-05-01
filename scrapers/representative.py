@@ -54,10 +54,11 @@ class Representative(Scraper):
         Get information from static HTML elements.
         :param uls: HTML elements to loop through
         """
-        for li in uls[0].select('li'):
-            key = li.select_one('p.left').get_text()
-            if key:
-                self.result[key] = li.select_one('p.right').get_text()
+        for ul in uls[0:2]:
+            for li in ul.select('li'):
+                key = li.select_one('p.left').get_text()
+                if key:
+                    self.result[key] = li.select_one('p.right').get_text()
 
         # Opiniowanie projektów UE - Rafał Bochenek
         self.__get_static_datum_from_dynamic_div('#view\:_id1\:_id2\:facetMain\:_id191\:opinieue')
@@ -83,9 +84,12 @@ class Representative(Scraper):
     def __get_dynamic_info(self) -> None:
         if self._get_dynamic:
             self._get_selenium_driver()
+
             self.__click_div_hyperlinks()
             self.__click_div_hyperlinks('kontakt')
+
             self._make_soup(self._driver.page_source)
+
             self.__get_speeches()
             self.__get_actions()
             self.__get_votes()
@@ -106,11 +110,18 @@ class Representative(Scraper):
             2) kontakt - complex case.
         :param div_class: div's class to click through
         """
-
-        def find_static_element(li, element_id: str):
+        def find_static_element_by_text(li, text: str) -> bool:
             # to catch a not dynamic element in activity div
             try:
-                element = li.find_element(By.ID, element_id)
+                li.find_element(By.LINK_TEXT, text)
+            except NoSuchElementException:
+                return False
+            return True
+
+        def find_static_element_by_id(li, text: str) -> bool:
+            # to catch a not dynamic element in activity div
+            try:
+                li.find_element(By.ID, text)
             except NoSuchElementException:
                 return False
             return True
@@ -118,14 +129,16 @@ class Representative(Scraper):
         lis = self._driver.find_elements(By.CSS_SELECTOR, f'div.{div_class} ul.data li')
         for i, li in enumerate(lis):
             # Opiniowanie projektów UE - Rafał Bochenek
-            eu_opinions = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:opinieue')
+            eu_opinions = find_static_element_by_text(li, 'Opiniowanie projektów UE')
             # Naruszenie zasad etyki poselskiej - Grzegorz Braun
-            ethics = find_static_element(li, 'view:_id1:_id2:facetMain:_id191:naruszenie')
+            ethics = find_static_element_by_text(li, 'Naruszenie zasad etyki poselskiej')
             # Strona WWW - Wanda Nowicka
-            web = find_static_element(li, 'poselWWW')
+            web = find_static_element_by_id(li, 'poselWWW')
             if not eu_opinions and not ethics and not web:
                 li.find_element(By.CSS_SELECTOR, 'a').click()
                 if div_class == 'kontakt' and i >= 1:
+                    if find_static_element_by_id(li, 'PoselEmail') and i != 4:
+                        i = 4
                     self.__wait_for_contact_loading(i, li)
                 else:
                     WebDriverWait(li, 30).until(ec.presence_of_element_located((By.ID, "content")))
@@ -133,46 +146,47 @@ class Representative(Scraper):
     def __wait_for_contact_loading(self, i, li):
         if i == 1:
             WebDriverWait(li, 30).until(
-                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdWspInner")))
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id189:holdWspInner")))
         elif i == 2:
             WebDriverWait(li, 30).until(
-                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:holdMajatekInner")))
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id189:holdMajatekInner")))
         elif i == 3:
             WebDriverWait(li, 30).until(
-                ec.presence_of_element_located(
-                    (By.ID, "view:_id1:_id2:facetMain:_id191:holdKorzysciInner")))
+                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id189:holdKorzysciInner")))
         elif i == 4:
             WebDriverWait(li, 30).until(
-                ec.presence_of_element_located((By.ID, "view:_id1:_id2:facetMain:_id191:_id280")))
+                ec.presence_of_element_located((By.CSS_SELECTOR, 'a[data-decoded="1"]')))
 
     def __get_speeches(self):
         # Wystąpienia na posiedzeniach Sejmu
         key = 'wypowiedzi'
         self.result[key] = dict()
-        a = self._soup.select_one('#content > table > tbody > tr > td > a')
-        if a:
-            self.result[key]['href'] = a.get('href')
-            self.result[key]['łącznie'] = a.get_text()
+        speech_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdWystapienia')
+        speech_td = speech_div.select_one('#content > table > tbody > tr > td')
+        if speech_td:
+            speech_a = speech_td.select_one('a')
+            if speech_a:
+                self.result[key]['href'] = speech_a.get('href')
+                self.result[key]['tekst'] = speech_td.get_text()
 
     def __get_actions(self):
         # Interpelacje, zapytania, pytania w sprawach bieżących, oświadczenia
         key = 'interpelacje'
         self.result[key] = list()
-        action_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdInterpelacje')
-        if action_div:
-            rows = action_div.select('tr')
-            for i, row in enumerate(rows):
-                tds = row.select('td')
-                if len(tds) == 3:
-                    self.result[key].append(dict())
-                    left_td, right_td = tds[0], tds[1]
-                    left_a = left_td.select_one('a')
-                    self.result[key][i]['nazwa'] = left_a.get_text()
-                    self.result[key][i]['href'] = left_a.get('href')
-                    self.result[key][i]['liczba'] = right_td.get_text()
+        action_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdInterpelacje')
+        rows = action_div.select('tr')
+        for i, row in enumerate(rows):
+            tds = row.select('td')
+            if len(tds) == 3:
+                self.result[key].append(dict())
+                left_td, right_td = tds[0], tds[1]
+                left_a = left_td.select_one('a')
+                self.result[key][i]['nazwa'] = left_a.get_text()
+                self.result[key][i]['href'] = left_a.get('href')
+                self.result[key][i]['liczba'] = right_td.get_text()
 
     def __get_votes(self):
-        vote_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdGlosowania')
+        vote_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdGlosowania')
         vote_tds = vote_div.select('td')
         key = 'głosy'
         self.result[key] = dict()
@@ -215,20 +229,20 @@ class Representative(Scraper):
                     self.result[key][i][head_names[j]] = td.get_text()
 
     def __get_commissions(self) -> None:
-        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdKomisje')
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdKomisje')
         self.__get_table('komisje', div)
 
     def __get_delegations(self) -> None:
-        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdDelegacje')
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdDelegacje')
         self.__get_table('delegacje', div)
 
     def __get_teams(self) -> None:
-        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdZespoly')
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdZespoly')
         self.__get_table('zespoły', div)
 
     def __get_offices(self) -> None:
         key = 'biura'
-        divs = self._soup.select('#view\:_id1\:_id2\:facetMain\:_id191\:holdBiura > div#content')
+        divs = self._soup.select('#view\:_id1\:_id2\:facetMain\:_id189\:holdBiura > div#content')
         main_div, reports_div = divs[0], divs[1].select_one('tbody')
         head_names = [
             "nazwa",
@@ -242,7 +256,7 @@ class Representative(Scraper):
             self.__get_table("biurowe raporty", reports_div)
 
     def __get_collaborators(self) -> None:
-        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdWspInner')
+        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdWspInner')
         head_names = [
             "nazwa",
             "rola"
@@ -250,7 +264,7 @@ class Representative(Scraper):
         self.__get_table('współpracownicy', div, head_names, last_column_is_file=True)
 
     def __get_financial_declarations(self):
-        tbody = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdMajatekInner > table > tbody')
+        tbody = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdMajatekInner > table > tbody')
         head_names = [
             "nazwa"
         ]
@@ -259,15 +273,15 @@ class Representative(Scraper):
     def __get_benefit_record(self):
         key = 'rejestr korzyści'
         self.result[key] = list()
-        div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:holdKorzysciInner')
-        as_ = div.select('a')
+        benefit_div = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:holdKorzysciInner')
+        as_ = benefit_div.select('a')
         for i, a in enumerate(as_):
             self.result[key].append(dict())
             self.result[key][i]['nazwa'] = a.get_text()
             self.result[key][i]['href'] = a.get('href')
 
     def __get_email(self) -> None:
-        self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id191\:_id280').get('href')
+        self.result['email'] = self._soup.select_one('#view\:_id1\:_id2\:facetMain\:_id189\:_id279').get_text()
 
 
 if __name__ == '__main__':
@@ -293,5 +307,11 @@ if __name__ == '__main__':
     representative.scrape()
     print(representative.result)
     representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=269&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=288&type=A', True)
+    representative.scrape()
+    print(representative.result)
+    representative = Representative('https://www.sejm.gov.pl/Sejm9.nsf/posel.xsp?id=417&type=A', True)
     representative.scrape()
     print(representative.result)

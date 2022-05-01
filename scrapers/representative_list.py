@@ -16,26 +16,21 @@ class RepresentativeList(Scraper):
         super().__init__(url)
         self.representatives_result = list()
         self.result = list()
+        # as_ = self._soup.select('ul.deputies > li > div > a')
+        # print(as_)
 
     def scrape(self) -> None:
-        """Scrape deputies (representatives) links form a term of office."""
-        uls = self.__get_deputies_uls()
-        self.__extract_a_href(uls)
+        """Scrape deputies (representatives) links from a term of office."""
+        self.__get_a_href()
 
-    def __get_deputies_uls(self) -> bs4.element.ResultSet:
-        """Get list of ul (HTML unordered list) elements containing deputies (representatives) class."""
-        return self._soup.select('ul.deputies')
-
-    def __extract_a_href(self, elements: bs4.element.ResultSet) -> list:
+    def __get_a_href(self):
         """
-        Extract href (link's destination) attributes from a (HTML hyperlink) from provided list of HTML elements.
+        Get list of href (link's destination) attributes from a (HTML hyperlink).
         :param elements: list of HTML elements
-        :return: list of links
         """
-        for a_list in (e.select("a", href=True) for e in elements):
-            for a in a_list:
-                # update part href to the full URL
-                self.result.append(urljoin(self.url, a.get('href'))) if a.get('href') else None
+        for a in self._soup.select('ul.deputies > li > div > a'):
+            # update part href to the full URL
+            self.result.append(urljoin(self.url, a.get('href'))) if a.get('href') else None
 
     def scrape_representatives(self, get_dynamic=False):
         for url in self.result:
@@ -46,10 +41,10 @@ class RepresentativeList(Scraper):
 
 if __name__ == '__main__':
     rl = RepresentativeList()
+    # get representative links
     rl.scrape()
-    for r in rl.result:
-        print(r)
+
+    # get info from representatives
     rl.scrape_representatives(True)
+    # save to json
     rl.save_data_to_json(rl.representatives_result)
-    # print(rl.representatives_result)
-    print(len(rl.result))
