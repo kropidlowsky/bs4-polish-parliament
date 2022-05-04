@@ -30,7 +30,7 @@ class Representative(Scraper):
         self.result['zdjęcie'] = self.__get_picture()
         data_uls = self.__get_data_uls()
         self.__get_static_info(data_uls)
-        print(self.result['nazwa'])
+        # print(self.result['nazwa'])
         self.__get_dynamic_info()
 
     def __get_info_div(self) -> bs4.BeautifulSoup:
