@@ -1,6 +1,7 @@
 import abc
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import requests
 import json
 
@@ -36,7 +37,10 @@ class Scraper(abc.ABC):
         self._soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
 
     def _get_selenium_driver(self) -> None:
-        self._driver = webdriver.Chrome()
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        self._driver = webdriver.Chrome(chrome_options=options)
         self._driver.get(self.url)
 
     def save_data_to_json(self, data, filename='data.json'):
